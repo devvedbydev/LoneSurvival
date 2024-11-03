@@ -7,6 +7,12 @@ local character = player.Character or player.CharacterAdded:Wait()
 local resourceFolder = workspace:FindFirstChild("Resources")
 local oreModels = {}
 _G.ores = {}
+_G.oreColors = {
+    Iron = Color3.new(1, 1, 1), -- White
+    Gold = Color3.new(1, 0.843, 0), -- Gold
+    Diamond = Color3.new(0, 1, 1), -- Cyan
+    -- Add more ores and their colors as needed
+}
 
 if resourceFolder then
     local oreTypes = {}
@@ -51,6 +57,7 @@ game:GetService("RunService").RenderStepped:Connect(function()
                     if onScreen then
                         espText[model].Position = Vector2.new(screenPosition.X, screenPosition.Y)
                         espText[model].Text = string.format("%s\n%.1f studs", model.Name, distance)
+                        espText[model].Color = _G.oreColors[model.Name] or Color3.new(1, 1, 1) -- Default to white if not found
                         espText[model].Visible = true
                     else
                         espText[model].Visible = false
