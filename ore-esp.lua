@@ -59,6 +59,7 @@ game:GetService("RunService").RenderStepped:Connect(function()
                         espText[model].Text = string.format("%s\n%.1f studs", model.Name, distance)
                         espText[model].Color = _G.oreColors[model.Name] or Color3.new(1, 1, 1) -- Default to white if not found
                         espText[model].Visible = true
+                        espText[model].Size = _G.FontSize -- Update font size from global variable
                     else
                         espText[model].Visible = false
                     end
