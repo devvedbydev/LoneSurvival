@@ -18,25 +18,29 @@ if resourceFolder then
                 oreTypes[oreName] = true
             end
 
-            local textLabel = Drawing.new("Text")
-            textLabel.Visible = false
-            textLabel.Color = Color3.new(1, 1, 1)
-            textLabel.Size = _G.FontSize
-            textLabel.Center = true
-            textLabel.Font = 2
-            table.insert(oreModels, {model = child, textLabel = textLabel})
-
             if not child.PrimaryPart then
                 child.PrimaryPart = child:FindFirstChildWhichIsA("BasePart")
             end
+            
+            table.insert(oreModels, child)
         end
     end
 end
 
+local espText = {}
+for _, model in ipairs(oreModels) do
+    local text = Drawing.new("Text")
+    text.Visible = false
+    text.Color = Color3.new(1, 1, 1)
+    text.Size = _G.FontSize
+    text.Center = true
+    text.Font = 2
+    espText[model] = text
+end
+
 game:GetService("RunService").RenderStepped:Connect(function()
     if _G.ESPToggle then
-        for _, data in ipairs(oreModels) do
-            local model, textLabel = data.model, data.textLabel
+        for _, model in ipairs(oreModels) do
             if model and model.PrimaryPart then
                 local pivotPosition = model:GetPivot().Position
                 local playerPosition = character:FindFirstChild("HumanoidRootPart") and character.HumanoidRootPart.Position
@@ -45,29 +49,28 @@ game:GetService("RunService").RenderStepped:Connect(function()
                 if distance <= _G.DisplayLimit and (_G.SelectedOreType == "All" or model.Name == _G.SelectedOreType) then
                     local screenPosition, onScreen = workspace.CurrentCamera:WorldToViewportPoint(pivotPosition)
                     if onScreen then
-                        textLabel.Position = Vector2.new(screenPosition.X, screenPosition.Y)
-                        textLabel.Text = string.format("%s\n%.1f studs", model.Name, distance)
-                        textLabel.Size = _G.FontSize
-                        textLabel.Visible = true
+                        espText[model].Position = Vector2.new(screenPosition.X, screenPosition.Y)
+                        espText[model].Text = string.format("%s\n%.1f studs", model.Name, distance)
+                        espText[model].Visible = true
                     else
-                        textLabel.Visible = false
+                        espText[model].Visible = false
                     end
                 else
-                    textLabel.Visible = false
+                    espText[model].Visible = false
                 end
             else
-                textLabel.Visible = false
+                espText[model].Visible = false
             end
         end
     else
-        for _, data in ipairs(oreModels) do
-            data.textLabel.Visible = false
+        for _, model in ipairs(oreModels) do
+            espText[model].Visible = false
         end
     end
 end)
 
 player.OnTeleport:Connect(function()
-    for _, data in ipairs(oreModels) do
-        data.textLabel:Remove()
+    for _, model in ipairs(oreModels) do
+        espText[model]:Remove()
     end
 end)
