@@ -1,80 +1,76 @@
--- Settings
-_G.ESPToggle = false
-_G.DisplayLimit = 1000
-_G.SelectedOreType = "All"
+if not _G.FontSize then _G.FontSize = 16 end
+if not _G.DisplayLimit then _G.DisplayLimit = 1000 end
+if not _G.SelectedOreType then _G.SelectedOreType = "All" end
 
-local player = game.Players.LocalPlayer
-local camera = workspace.CurrentCamera
-local resourceFolder = workspace:WaitForChild("Resources")
-local ores = {}
-local oreColors = {
-    Brimstone = Color3.fromRGB(255, 255, 0), -- Yellow
-    Stone = Color3.fromRGB(255, 255, 255), -- White
-    Iron = Color3.fromRGB(255, 165, 0) -- Orange/Brown
-}
+local player = game:GetService("Players").LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local resourceFolder = workspace:FindFirstChild("Resources")
+local oreModels = {}
+_G.ores = {}
 
--- Function to update the ores table
-local function updateOres()
-    ores = {}
+if resourceFolder then
+    local oreTypes = {}
     for _, child in ipairs(resourceFolder:GetChildren()) do
         if child:IsA("Model") and string.match(child.Name:lower(), "ore") then
-            table.insert(ores, child)
-        end
-    end
-end
-
-updateOres() -- Initial load of ores
-
--- Drawing objects
-local espText = {}
-for _, ore in ipairs(ores) do
-    espText[ore] = Drawing.new("Text")
-    espText[ore].Size = 15
-    espText[ore].Font = 2
-    espText[ore].Center = true
-    espText[ore].Visible = false
-end
-
--- ESP Update Function
-local function updateESP()
-    local playerPosition = player.Character and player.Character:FindFirstChild("HumanoidRootPart").Position
-    if not playerPosition then return end
-
-    for _, ore in ipairs(ores) do
-        if ore.PrimaryPart then
-            local distance = (playerPosition - ore.PrimaryPart.Position).Magnitude
-            local oreName = ore.Name
-
-            if distance <= _G.DisplayLimit and (_G.SelectedOreType == "All" or oreName == _G.SelectedOreType) then
-                local screenPosition, onScreen = camera:WorldToViewportPoint(ore.PrimaryPart.Position)
-                if onScreen then
-                    espText[ore].Position = Vector2.new(screenPosition.X, screenPosition.Y)
-                    espText[ore].Text = string.format("%s\n%.1f studs", oreName, distance)
-                    espText[ore].Color = oreColors[oreName] or Color3.new(1, 1, 1) -- Default to white
-                    espText[ore].Visible = true
-                else
-                    espText[ore].Visible = false
-                end
-            else
-                espText[ore].Visible = false
+            local oreName = child.Name
+            if not oreTypes[oreName] then
+                table.insert(_G.ores, oreName)
+                oreTypes[oreName] = true
             end
-        else
-            espText[ore].Visible = false
+
+            if not child.PrimaryPart then
+                child.PrimaryPart = child:FindFirstChildWhichIsA("BasePart")
+            end
+            
+            table.insert(oreModels, child)
         end
     end
 end
 
--- Connect to RenderStepped for ESP updates
+local espText = {}
+for _, model in ipairs(oreModels) do
+    local text = Drawing.new("Text")
+    text.Visible = false
+    text.Color = Color3.new(1, 1, 1)
+    text.Size = _G.FontSize
+    text.Center = true
+    text.Font = 2
+    espText[model] = text
+end
+
 game:GetService("RunService").RenderStepped:Connect(function()
     if _G.ESPToggle then
-        updateESP()
+        for _, model in ipairs(oreModels) do
+            if model and model.PrimaryPart then
+                local pivotPosition = model:GetPivot().Position
+                local playerPosition = character:FindFirstChild("HumanoidRootPart") and character.HumanoidRootPart.Position
+                local distance = (playerPosition - pivotPosition).Magnitude
+
+                if distance <= _G.DisplayLimit and (_G.SelectedOreType == "All" or model.Name == _G.SelectedOreType) then
+                    local screenPosition, onScreen = workspace.CurrentCamera:WorldToViewportPoint(pivotPosition)
+                    if onScreen then
+                        espText[model].Position = Vector2.new(screenPosition.X, screenPosition.Y)
+                        espText[model].Text = string.format("%s\n%.1f studs", model.Name, distance)
+                        espText[model].Visible = true
+                    else
+                        espText[model].Visible = false
+                    end
+                else
+                    espText[model].Visible = false
+                end
+            else
+                espText[model].Visible = false
+            end
+        end
     else
-        for _, text in pairs(espText) do
-            text.Visible = false
+        for _, model in ipairs(oreModels) do
+            espText[model].Visible = false
         end
     end
 end)
 
--- Update ore list on resource folder change
-resourceFolder.ChildAdded:Connect(updateOres)
-resourceFolder.ChildRemoved:Connect(updateOres)
+player.OnTeleport:Connect(function()
+    for _, model in ipairs(oreModels) do
+        espText[model]:Remove()
+    end
+end)
