@@ -31,12 +31,18 @@ local espText = {}
 for _, model in ipairs(oreModels) do
     local text = Drawing.new("Text")
     text.Visible = false
-    text.Color = Color3.new(1, 1, 1)
+    text.Color = Color3.new(1, 1, 1) -- Default color, will be updated later
     text.Size = _G.FontSize
     text.Center = true
     text.Font = 2
     espText[model] = text
 end
+
+local oreColors = {
+    Brimstone = Color3.new(1, 1, 0), -- Yellow
+    Stone = Color3.new(1, 1, 1),     -- White
+    Iron = Color3.new(1, 0.647, 0)   -- Orange
+}
 
 game:GetService("RunService").RenderStepped:Connect(function()
     if _G.ESPToggle then
@@ -44,14 +50,15 @@ game:GetService("RunService").RenderStepped:Connect(function()
             if model and model.PrimaryPart then
                 local pivotPosition = model:GetPivot().Position
                 local playerPosition = character:FindFirstChild("HumanoidRootPart") and character.HumanoidRootPart.Position
-                local distance = (playerPosition - pivotPosition).Magnitude
+                local distance = math.floor((playerPosition - pivotPosition).Magnitude)
 
                 if distance <= _G.DisplayLimit and (_G.SelectedOreType == "All" or model.Name == _G.SelectedOreType) then
                     local screenPosition, onScreen = workspace.CurrentCamera:WorldToViewportPoint(pivotPosition)
                     if onScreen then
                         espText[model].Position = Vector2.new(screenPosition.X, screenPosition.Y)
-                        espText[model].Text = string.format("%s\n%.1f studs", model.Name, distance)
+                        espText[model].Text = string.format("%s\n%d m", model.Name, distance) -- Changed to meters and removed decimals
                         espText[model].Visible = true
+                        espText[model].Color = oreColors[model.Name] or Color3.new(1, 1, 1) -- Default to white if no color is defined
                     else
                         espText[model].Visible = false
                     end
