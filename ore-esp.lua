@@ -1,4 +1,4 @@
-if not _G.FontSize then _G.FontSize = 16 end
+if not _G.ESPToggle then _G.ESPToggle = false end
 if not _G.DisplayLimit then _G.DisplayLimit = 1000 end
 if not _G.SelectedOreType then _G.SelectedOreType = "All" end
 
@@ -6,24 +6,16 @@ local player = game:GetService("Players").LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local resourceFolder = workspace:FindFirstChild("Resources")
 local oreModels = {}
-_G.ores = {}
+_G.ores = {"All", "Brimstone", "Stone", "Iron"} -- Defined ore types with specific colors
 _G.oreColors = {
-    Iron = Color3.new(1, 1, 1), -- White
-    Gold = Color3.new(1, 0.843, 0), -- Gold
-    Diamond = Color3.new(0, 1, 1), -- Cyan
-    -- Add more ores and their colors as needed
+    Brimstone = Color3.new(1, 1, 0), -- Yellow
+    Stone = Color3.new(1, 1, 1), -- White
+    Iron = Color3.new(0.8, 0.52, 0.25), -- Brown/Orange
 }
 
 if resourceFolder then
-    local oreTypes = {}
     for _, child in ipairs(resourceFolder:GetChildren()) do
         if child:IsA("Model") and string.match(child.Name:lower(), "ore") then
-            local oreName = child.Name
-            if not oreTypes[oreName] then
-                table.insert(_G.ores, oreName)
-                oreTypes[oreName] = true
-            end
-
             if not child.PrimaryPart then
                 child.PrimaryPart = child:FindFirstChildWhichIsA("BasePart")
             end
@@ -38,7 +30,7 @@ for _, model in ipairs(oreModels) do
     local text = Drawing.new("Text")
     text.Visible = false
     text.Color = Color3.new(1, 1, 1)
-    text.Size = _G.FontSize
+    text.Size = 14 -- Smaller font size
     text.Center = true
     text.Font = 2
     espText[model] = text
@@ -46,10 +38,11 @@ end
 
 game:GetService("RunService").RenderStepped:Connect(function()
     if _G.ESPToggle then
+        local playerPosition = character:FindFirstChild("HumanoidRootPart") and character.HumanoidRootPart.Position
+
         for _, model in ipairs(oreModels) do
             if model and model.PrimaryPart then
                 local pivotPosition = model:GetPivot().Position
-                local playerPosition = character:FindFirstChild("HumanoidRootPart") and character.HumanoidRootPart.Position
                 local distance = (playerPosition - pivotPosition).Magnitude
 
                 if distance <= _G.DisplayLimit and (_G.SelectedOreType == "All" or model.Name == _G.SelectedOreType) then
@@ -59,7 +52,6 @@ game:GetService("RunService").RenderStepped:Connect(function()
                         espText[model].Text = string.format("%s\n%.1f studs", model.Name, distance)
                         espText[model].Color = _G.oreColors[model.Name] or Color3.new(1, 1, 1) -- Default to white if not found
                         espText[model].Visible = true
-                        espText[model].Size = _G.FontSize -- Update font size from global variable
                     else
                         espText[model].Visible = false
                     end
